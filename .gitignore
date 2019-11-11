@@ -3,3 +3,4 @@
 .vscode/
 sample-data/
 __pycache__/
+*.ipynb

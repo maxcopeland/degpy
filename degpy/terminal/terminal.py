@@ -143,7 +143,7 @@ class Terminal:
         self.timestamp_expanded = np.linspace(self.timestamp.min(), self.timestamp.max(), len(self.data))
 
         
-    def bandpower(self, band, start_event, end_event, window_sec=None, relative=False):
+    def bandpower(self, band, exposure, window_sec=None, relative=False):
         """Compute the average power of the signal x in a specific frequency band.
 
         Parameters
@@ -166,18 +166,24 @@ class Terminal:
         """
         band = np.asarray(band)
         low, high = band
+        start_event = exposure + "s"
+        end_event = exposure + "e"
 
-        # Pulling out exposure data
+        # Pulling out event timestamp
         start_event_ts = self.event_timestamps[np.where(self.events == start_event)]
         end_event_ts = self.event_timestamps[np.where(self.events == end_event)]
-        
-        # TODO: This method is lazy, need to make more efficient
-        start_event_data_idx = np.where(self.timestamp_expanded.astype(int) == start_event_ts)
-        end_event_data_idx = np.where(self.timestamp_expanded.astype(int) == end_event_ts)
 
-        return start_event_data_idx, end_event_data_idx
+        # Finding index of timestamp for slicing sample
+        # TODO: Timestamps to exactly match. ie:
+        # Start event ts:  [2460552980]
+        # Start event ts (from expanded):  2460553356.988559
+        # end event ts:  [2647660347]
+        # end event ts (from expanded):  2647660720.174286
 
-        # data = self.data[start_event_data_idx:end_event_data_idx]
+        start_event_data_idx = np.argmax(self.timestamp_expanded > start_event_ts)
+        end_event_data_idx = np.argmin(self.timestamp_expanded < end_event_ts)
+
+        data = self.data[start_event_data_idx:end_event_data_idx]
 
         # Define window length
         if window_sec is not None:
@@ -200,3 +206,27 @@ class Terminal:
         if relative:
             bp /= simps(psd, dx=freq_res)
         return bp
+
+    def bandpower_splits(self, band, window_sec=None, relative=False):
+        
+        # Get list of exposure types 
+        # e.g. ['r1', 'b1', ...]
+        exposures = []
+        for e in self.events:
+            if e[-1] == 's':
+                exposures.append(e[:-1])
+
+        bp_dict = {}
+        for i in range(len(exposures)):
+            bp_dict[exposures[i]] = self.bandpower(band, exposures[i])
+
+        return bp_dict
+
+# exposures = ['Starting Recording', 'r1s', 'r1e', 'b1s', 'b1e', 'b2s', 'b2e',
+                #    'b3s', 's1', 's1o', 's2', 's2o', 'b3e', 'b4s', 's1', 's1o', 's2',
+                #    's2o', 'b4e', 'b5s', 's1', 's2', 's1o', 's2o', 'b5e', 'b6s', 's1',
+                #    's2', 's1o', 's2o', 'b6e', 'b7s', 'o1', 'o1o', 'o2', 'o2o', 'b7e',
+                #    'b8s', 'o1', 'o1o', 'o2', 'o2o', 'b8e', 'b9s', 'o1', 'o2', 'o1o',
+                #    'o2o', 'b9e', 'b10s', 'o1', 'o2', 'o1o', 'o2o', 'b10e', 'b11s',
+                #    'b11e', 'b12s', 'b12e', 'r2s', 'r2e', 'Stopping Recording'],
+                #   dtype='<U18')
