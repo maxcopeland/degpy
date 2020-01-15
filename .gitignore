@@ -1,6 +1,5 @@
-.ipynb_checkpoints/
-.DS_Store
-.vscode/
-sample-data/
+.idea/*
 __pycache__/
-*.ipynb
+sample_data/
+.DS_Store
+.ipynb_checkpoints/
