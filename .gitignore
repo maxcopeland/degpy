@@ -3,3 +3,5 @@ __pycache__/
 sample_data/
 .DS_Store
 .ipynb_checkpoints/
+ephys/
+
