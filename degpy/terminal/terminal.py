@@ -4,6 +4,7 @@ import os
 import warnings
 
 import numpy as np
+import pandas as pd
 
 from scipy.signal import welch
 from scipy.integrate import simps
@@ -140,7 +141,38 @@ class Terminal:
         self.sampling_rate = records['SampleFreq'][0]
         self.channel_number = records['ChannelNumber'][0]
         self.timestamp = records['TimeStamp']
+        #TODO: Ask Nathan if below is a fair means of getting timestamp same length as signal data
         self.timestamp_expanded = np.linspace(self.timestamp.min(), self.timestamp.max(), len(self.data))
+
+
+    def get_dataframe(self):
+        """
+        Function to return pandas dataframe from ncs data and event data
+
+        :return: pandas dataframe
+        """
+
+        # Creating event mapping, of float to event so nan's are
+        # easily replaced, then mapping is used to fill event strings
+        event_map = {}
+        for i in range(len(self.events)):
+            event_map[float(i)] = self.events[i]
+
+        # Creating dataframe
+        df = pd.DataFrame({'timestamp': self.timestamp_expanded, 'data': self.data})
+        df['exposure'] = np.nan * len(df)
+
+        event_ts = self.event_timestamps[:-1]
+
+        for i, ts in enumerate(event_ts):
+            # TODO: last value from argmax op is 0. Delete last value?
+            ix = np.argmax(df['timestamp'] > ts)
+            df.at[ix, 'exposure'] = float(i)
+
+        df['exposure'] = df['exposure'].fillna(method='ffill').map(event_map)
+
+        return df
+
 
         
     def bandpower(self, band, exposure, window_sec=None, relative=False):
