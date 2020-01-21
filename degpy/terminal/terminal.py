@@ -162,14 +162,18 @@ class Terminal:
         df = pd.DataFrame({'timestamp': self.timestamp_expanded, 'data': self.data})
         df['exposure'] = np.nan * len(df)
 
+        # TODO: Validate removing last event timestamp works
         event_ts = self.event_timestamps[:-1]
 
         for i, ts in enumerate(event_ts):
             # TODO: last value from argmax op is 0. Delete last value?
-            ix = np.argmax(df['timestamp'] > ts)
+            ix = np.argmax(df['timestamp'].values > ts)
             df.at[ix, 'exposure'] = float(i)
 
         df['exposure'] = df['exposure'].fillna(method='ffill').map(event_map)
+
+        # Adding degunum to dataframe
+        df['degu_id'] = [self.header['FileName'].split('\\')[2].split('_')[0]] * len(df)
 
         return df
 
