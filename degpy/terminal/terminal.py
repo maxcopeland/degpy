@@ -11,6 +11,7 @@ from scipy.integrate import simps
 
 from degpy.neuralynx_io import read_records, parse_header, check_ncs_records, read_header
 
+
 class Terminal:
     """
     Instantiate the Channel object
