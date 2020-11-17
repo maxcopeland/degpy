@@ -45,10 +45,10 @@ class Session:
         """
         files = []
         for file in os.listdir(self.session_path):
-            if (file.split(".")[1] == "ncs" or
-                file.split(".")[1] == "nse" or
-                file.split(".")[1] == "ntt"):
-                files.append(file)
+            # if (file.split(".")[1] == "ncs" or
+            #     file.split(".")[1] == "nse" or
+            #     file.split(".")[1] == "ntt"):
+            files.append(file)
         if len(files) == 0:
             raise FileNotFoundError("No data files found with extensions .ncs, .ntt, or .nse")
         else:

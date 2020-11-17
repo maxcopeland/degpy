@@ -42,6 +42,23 @@ class Scraper:
         return data_files, (data_size / 1e9)
 
     @staticmethod
+    def get_lfp_data(path):
+        """
+        Utility to crawl LFP datafiles
+
+        :param path:
+        :return: tuple, (list of filepaths, total size of files in bytes)
+        """
+
+        # Grabbing directories containing data files
+        data_dirs = [x[0] for x in os.walk(path) if '-' in x[0].split('/')[-1]]
+
+        for dir in data_dirs:
+            sess = Session(dir)
+
+
+
+    @staticmethod
     def move_files(root_path, dest_path):
         """
 
