@@ -36,6 +36,11 @@ class Terminal:
         # Load in data
         self._load_data()
 
+        # Load target vector
+        self.target = self._get_exposure_vec()
+
+        self.encoded_target = self._get_encoded_labels()
+
 
 
     def _get_data_record(file_path):
@@ -179,7 +184,83 @@ class Terminal:
         return df
 
 
-        
+    def _get_exposure_vec(self):
+
+        event_map = {}
+
+        for i in range(len(self.events)):
+            event_map[float(i)] = self.events[i]
+
+        exposures = pd.Series([np.nan] * len(self.data))
+
+        # TODO: Validate removing last event timestamp works
+        event_ts = self.event_timestamps[:-1]
+
+        for i, ts in enumerate(event_ts):
+            # TODO: last value from argmax op is 0. Delete last value?
+            ix = np.argmax(self.timestamp_expanded > ts)
+            exposures[ix] = float(i)
+
+        exposures = exposures.fillna(method='ffill').map(event_map)
+
+        return exposures.values
+
+
+    def _get_encoded_labels(self):
+
+        stack = []
+        end_states = []
+        encoded_labels = []
+
+        for lab in self.target:
+            if lab[-1] in '1234567890':
+                lab += 'i'
+
+            if lab[:-1] not in stack:
+
+                if lab[-1] == 's' or lab[-1] == 'i':
+                    stack.append(lab[:-1])
+                    try:
+                        end_states.pop()
+                    except IndexError:
+                        pass
+
+            if lab[:-1] not in end_states:
+                if lab[-1] == 'e' or lab[-1] == 'o':
+                    end_states.append(lab[:-1])
+                    stack.pop()
+
+            encoded_labels.append("-".join(stack))
+
+        return encoded_labels
+
+
+    def get_target_binary_matrix(self):
+
+        cols = []
+        target_cols = pd.Series(self.encoded_target).unique()
+
+        for i, lab in enumerate(self.encoded_target):
+            exposures = lab.split('-')
+            #     if '' not in exposures:
+            #         for exp in exposures:
+            #             target_binary.loc[i, exp] = 1
+            #     if i % 10000 == 0:
+            #         print(i)
+            row = []
+            for col in target_cols:
+                if col in exposures:
+                    row.append(1)
+                else:
+                    row.append(0)
+            cols.append(row)
+
+        target_binary_matrix = np.array(cols)
+
+        return target_cols, target_binary_matrix
+
+
+
     def bandpower(self, band, exposure, window_sec=None, relative=False):
         """Compute the average power of the signal x in a specific frequency band.
 
